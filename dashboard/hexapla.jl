@@ -54,13 +54,18 @@ app.layout = html_div(className = "w3-container") do
     html_h1() do 
         dcc_markdown("Hexapla text reader")
     end,
-    dcc_dropdown(
-        id="translations",
-        options = msoptions(filenames, titlesdict),
-        value = "MTL",
-    ),
-
     html_div(className="w3-container",
+    children = [
+        html_div(className="w3-col l6 m6",
+            dcc_dropdown(
+                id="translations",
+                options = msoptions(filenames, titlesdict),
+                value = "MTL",
+            )
+        ),
+        
+        
+
         html_div(className="w3-col l6 m6",
         children = [
             dcc_markdown("Set the slider to use 1-6 columns"),
@@ -72,6 +77,7 @@ app.layout = html_div(className = "w3-container") do
                 value=2
             )
         ])
+    ]
     ),
 
     
