@@ -32,6 +32,16 @@ function loadtexts(dir)
 end
 (titlesdict, filenames, langs)  = loadtexts(datadir)
 
+function booksmenu(dir)
+    f = joinpath(dir, "latVUC_vpl.txt")
+    books = map(cols -> cols[1], readlines(f) .|> split ) |> unique
+    menu = []
+    for b in books
+        push!(menu, (label = b, value = b))
+    end
+    menu
+end
+# 
 function msoptions(files, titles)
     opts = []
     for f in files
@@ -56,12 +66,37 @@ app.layout = html_div(className = "w3-container") do
         dcc_markdown("Hexapla text reader")
     end,
   
-    dcc_markdown("*Select translations to include:*"),
+    html_h3("Select texts"),
+    dcc_markdown("*Translations to include:*"),
     dcc_checklist(
         id="translations",
         options = msoptions(filenames, titlesdict),
         labelStyle = Dict("display" => "inline-block")
     ),
+
+    html_h3("Select passage"),
+    html_div(className = "w3-container",
+    children = [    
+        html_div(className="w3-col l4 m4",
+        children = [
+            dcc_markdown("*Book*:"),
+            dcc_dropdown(
+                id = "book",
+                options = booksmenu(datadir)
+            )
+        ]),
+        html_div(className="w3-col l4 m4",
+        children = [
+            dcc_markdown("*Chapter/verse* (e.g., `1:1`):")
+            dcc_input(
+                    id="verse",
+                    placeholder="1:1",
+            )
+        ])
+
+    ]),
+
+
 
     html_div(className="w3-container", id="columns") 
 end
