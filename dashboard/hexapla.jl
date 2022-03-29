@@ -57,10 +57,9 @@ app.layout = html_div(className = "w3-container") do
     html_div(className="w3-container",
     children = [
         html_div(className="w3-col l6 m6",
-            dcc_dropdown(
+            dcc_checklist(
                 id="translations",
-                options = msoptions(filenames, titlesdict),
-                value = "MTL",
+                options = msoptions(filenames, titlesdict)
             )
         ),
         
