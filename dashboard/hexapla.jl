@@ -48,66 +48,50 @@ end
 
 app.layout = html_div(className = "w3-container") do
     html_div(className = "w3-container w3-light-gray w3-cell w3-mobile w3-border-left w3-border-right w3-border-gray",
-        children = [dcc_markdown("*Dashboard version*: **$(DASHBOARD_VERSION)** ([version notes](https://homermultitext.github.io/dashboards/lightbox/))")]),
+        children = [dcc_markdown("*Dashboard version*: **$(DASHBOARD_VERSION)** ([version notes](https://homermultitext.github.io/dashboards/lightbox/))")]
+    ),
 
 
     html_h1() do 
         dcc_markdown("Hexapla text reader")
     end,
-    html_div(className="w3-container",
-    children = [
-        html_div(className="w3-col l6 m6",
-            dcc_checklist(
-                id="translations",
-                options = msoptions(filenames, titlesdict)
-            )
-        ),
-        
-        
-
-        html_div(className="w3-col l6 m6",
-        children = [
-            dcc_markdown("Set the slider to use 1-6 columns"),
-            dcc_slider(
-                id="numcolumns",
-                min=1,
-                max=6,
-                step=1,
-                value=2
-            )
-        ])
-    ]
+  
+    dcc_markdown("*Select translations to include:*"),
+    dcc_checklist(
+        id="translations",
+        options = msoptions(filenames, titlesdict),
+        labelStyle = Dict("display" => "inline-block")
     ),
 
-    
-    html_div(className="w3-container", id="columns")
-
-    
-        
+    html_div(className="w3-container", id="columns") 
 end
 
 
 
-function gencols(n)
-    twelfths = floor(12 / n) |> Int
+function gencols(optlist, titles, files)
+    
+    if isempty(optlist)
+        dcc_markdown("")
+    else
+        n = length(optlist)
+        twelfths = floor(12 / n) |> Int
 
-    results = Component[]
-    for i in 1:n
-        # generate column
-        push!(results, html_div(className="w3-col l$(twelfths) m$(twelfths)", 
-        dcc_markdown("Hi")))
+        results = Component[]
+        for i in 1:n
+            # generate column
+            push!(results, html_div(className="w3-col l$(twelfths) m$(twelfths)", 
+            dcc_markdown("## " * titles[optlist[i]])))
+        end
+        results
     end
-    results
 end
+
 
 callback!(app,
     Output("columns", "children"),
-    Input("numcolumns", "value")
-) do colnum 
-    twelfths = floor(12 / colnum)
-    #dcc_markdown("Make $(colnum) columns with 12ths grouped in divisions of $(twelfths) ")
-    gencols(colnum)
+    Input("translations", "value")
+) do xlations 
+    isnothing(xlations) ? gencols([]) : gencols(xlations, titlesdict, filenames)
 end
-
 
 run_server(app, "0.0.0.0", DEFAULT_PORT, debug=true)
