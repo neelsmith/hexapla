@@ -32,6 +32,13 @@ function loadtexts(dir)
 end
 (titlesdict, filenames, langs)  = loadtexts(datadir)
 
+booksdict = Dict(
+    "GEN" => "Genesis",
+    "EXO" => "Exodus",
+    "LEV" => "Leviticus",
+    "LUK" => "Gospel according to Luke"
+)
+
 function booksmenu(dir)
     f = joinpath(dir, "latVUC_vpl.txt")
     books = map(cols -> cols[1], readlines(f) .|> split ) |> unique
@@ -112,6 +119,7 @@ app.layout = html_div(className = "w3-container") do
             dcc_input(
                     id="verse",
                     placeholder="1:1",
+                    debounce = true
             )
         ])
     ]),
@@ -121,8 +129,15 @@ app.layout = html_div(className = "w3-container") do
 end
 
 
-function genheader(bk,ref)
-    isnothing(bk) || isnothing(ref) ? "" : dcc_markdown("## Header")
+function genheader(bk,ref,dict)
+    if isnothing(bk) || isnothing(ref)
+        ""  
+    elseif haskey(dict, bk)
+        dcc_markdown("## *$(dict[bk])*, $(ref)")
+    else
+        dcc_markdown("## `$(bk)`, $(ref)")
+    end
+
 end
 
 function gencols(optlist, titles, files, bk, psg)
@@ -130,7 +145,6 @@ function gencols(optlist, titles, files, bk, psg)
     if isempty(optlist)
         ""
     else
-        hdr = dcc_markdown("## Header")
         n = length(optlist)
         twelfths = floor(12 / n) |> Int
 
@@ -138,7 +152,7 @@ function gencols(optlist, titles, files, bk, psg)
         for i in 1:n
             # generate column
             push!(results, html_div(className="w3-col l$(twelfths) m$(twelfths)", 
-            dcc_markdown("## " * titles[optlist[i]])))
+            dcc_markdown("### " * titles[optlist[i]])))
         end
        results
     end
@@ -153,7 +167,7 @@ callback!(app,
     Input("verse", "value")
 ) do xlations, bk, psg
     cols = isnothing(xlations) ? gencols([]) : gencols(xlations, titlesdict, filenames, bk, psg)
-    hdr = genheader(bk, psg)
+    hdr = genheader(bk, psg, booksdict)
     (hdr, cols)
 end
 
