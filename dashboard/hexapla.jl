@@ -218,7 +218,6 @@ callback!(app,
     end
 end
 
-
 # Display results of looking up book/verse in selected translations
 callback!(app,
     Output("header", "children"),
