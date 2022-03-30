@@ -20,6 +20,8 @@ DEFAULT_PORT = 8050
 
 using Dash
 
+
+"""Load data from local files."""
 function loadtexts(dir)
     txts = filter(f -> endswith(f, ".txt"), readdir(dir))
     langcodes = map(t -> t[1:3], txts)
@@ -29,10 +31,28 @@ function loadtexts(dir)
     for cols in metadata
         mddict[cols[4]] = cols[1]
     end
-    (mddict, txts, langcodes)
-end
-(titlesdict, filenames, langs)  = loadtexts(datadir)
 
+    corpora = Dict()
+    re = r"([^ ]+) ([^ ]+) (.+)"
+    for txt in txts
+        passages = []
+        lines = readlines(joinpath(dir, txt))
+        for ln in lines
+            m = match(re, ln)
+            if ! isnothing(m)
+                (bk, ref, psg) = m.captures
+                push!(passages, ("$(bk):$(ref)", psg))
+            end
+        end
+        corpora[txt] = passages
+    end
+    (mddict, txts, langcodes, corpora)
+end
+(titlesdict, filenames, langs, texts)  = loadtexts(datadir)
+
+
+# Map language codes to readable names.
+# Probably better read in from an external source.
 booksdict = Dict(
     "GEN" => "Genesis",
     "EXO" => "Exodus",
@@ -40,6 +60,7 @@ booksdict = Dict(
     "LUK" => "Gospel according to Luke"
 )
 
+"""Generate menu of books using Latin Vulgate as source for IDs."""
 function booksmenu(dir)
     f = joinpath(dir, "latVUC_vpl.txt")
     books = map(cols -> cols[1], readlines(f) .|> split ) |> unique
@@ -62,10 +83,10 @@ app.layout = html_div(className = "w3-container") do
         children = [dcc_markdown("*Dashboard version*: **$(DASHBOARD_VERSION)**")]
     ),
 
-
     html_h1() do 
         dcc_markdown("Hexapla text reader")
     end,
+
     html_h3("Select texts and passage"),
     dcc_markdown("Optionally filter by language, then select one or more texts to view."),
 
@@ -119,7 +140,8 @@ app.layout = html_div(className = "w3-container") do
     html_div(className="w3-container", id="columns") 
 end
 
-# 
+"""Compose options for menu of translations.
+"""
 function xlationoptions(files, titles, langlist)
     opts = []
     if isempty(langlist)
@@ -136,6 +158,7 @@ function xlationoptions(files, titles, langlist)
     opts
 end
 
+"""Compose header for display of results."""
 function genheader(bk,ref,dict)
     if isnothing(bk) || isnothing(ref)
         ""  
@@ -147,8 +170,14 @@ function genheader(bk,ref,dict)
 
 end
 
-function gencols(optlist, titles, files, bk, psg)
-    
+
+function lookup(book, ref, corpus)
+    matched = filter(pr -> pr[1] == "$(book):$(ref)", corpus)
+    join(map(pr -> pr[1] * ".  " * pr[2], matched), "\n\n")
+end
+
+"""Compose display results of looking up passage in up to 6 translations."""
+function gencols(optlist, titles, bk, psg, textcorpora)
     if isempty(optlist)
         ""
     else
@@ -157,14 +186,25 @@ function gencols(optlist, titles, files, bk, psg)
 
         results = Component[]
         for i in 1:n
+            corpus = textcorpora[optlist[i]]
+            @warn("Corpus of lenght", length(corpus))
+            txtcontent = lookup(bk, psg, corpus)
             # generate column
-            push!(results, html_div(className="w3-col l$(twelfths) m$(twelfths)", 
-            dcc_markdown("### " * titles[optlist[i]])))
+            @warn("LOOKUP", bk, psg, txtcontent)
+            col = html_div(className="w3-col l$(twelfths) m$(twelfths)", 
+            children = [
+                dcc_markdown("### " * titles[optlist[i]]),
+                dcc_markdown(txtcontent)
+            ])
+
+            push!(results,col)
         end
        results
     end
 end
 
+
+# Filter translations menu on language choices:
 callback!(app,
     Output("translations", "options"),
     Input("languages", "value")
@@ -176,6 +216,8 @@ callback!(app,
     end
 end
 
+
+# Display results of looking up book/verse in selected translations
 callback!(app,
     Output("header", "children"),
     Output("columns", "children"),
@@ -183,7 +225,8 @@ callback!(app,
     Input("book", "value"),
     Input("verse", "value")
 ) do xlations, bk, psg
-    cols = isnothing(xlations) ? gencols([], titlesdict, filenames, bk, psg) : gencols(xlations, titlesdict, filenames, bk, psg)
+    cols = isnothing(xlations) ? gencols([], titlesdict, bk, psg, texts) : 
+    gencols(xlations, titlesdict, bk, psg, texts)
     hdr = genheader(bk, psg, booksdict)
     (hdr, cols)
 end
