@@ -105,7 +105,7 @@ app.layout = html_div(className = "w3-container") do
 
         html_div(className="w3-col l3 m3",
         children = [
-            dcc_markdown("*Chapter/verse* (e.g., `1:1`):")
+            dcc_markdown("*Chapter:verse* (e.g., `1:1`):")
             dcc_input(
                     id="verse",
                     placeholder="1:1",
