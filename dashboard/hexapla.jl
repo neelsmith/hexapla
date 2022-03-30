@@ -2,6 +2,7 @@
 # github repository:
 using Pkg
 Pkg.activate(joinpath(pwd(), "dashboard"))
+Pkg.resolve()
 Pkg.instantiate()
 
 DASHBOARD_VERSION = "0.1.0"
@@ -121,8 +122,16 @@ end
 # 
 function xlationoptions(files, titles, langlist)
     opts = []
-    for f in files
-        push!(opts, (label = titles[f], value = f))
+    if isempty(langlist)
+        for f in files
+            push!(opts, (label = titles[f], value = f))
+        end
+    else
+        for lang in langlist
+            for f in filter(f -> startswith(f, lang), files)
+                push!(opts, (label = titles[f], value = f))
+            end
+        end
     end
     opts
 end
@@ -166,6 +175,7 @@ callback!(app,
         xlationoptions(filenames, titlesdict, langg)
     end
 end
+
 callback!(app,
     Output("header", "children"),
     Output("columns", "children"),
