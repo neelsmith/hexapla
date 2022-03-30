@@ -65,19 +65,39 @@ app.layout = html_div(className = "w3-container") do
     html_h1() do 
         dcc_markdown("Hexapla text reader")
     end,
-  
-    html_h3("Select texts"),
-    dcc_markdown("*Translations to include:*"),
-    dcc_checklist(
-        id="translations",
-        options = msoptions(filenames, titlesdict),
-        labelStyle = Dict("display" => "inline-block")
-    ),
+    html_h3("Select texts and passage"),
+    dcc_markdown("Optionally filter by language, then select one or more texts to view."),
 
-    html_h3("Select passage"),
-    html_div(className = "w3-container",
-    children = [    
-        html_div(className="w3-col l4 m4",
+    html_div(className="w3-container",
+    children = [
+        html_div(className="w3-col l3 m3",
+        children = [
+            dcc_markdown("*Filter texts by languages*:"),
+            dcc_checklist(
+                id="languages",
+                options = [
+                    Dict("label" => "Arabic", "value" => "arb"),
+                    Dict("label" => "English", "value" => "eng"),
+                    Dict("label" => "French", "value" => "fra"),
+                    Dict("label" => "German", "value" => "deu"),
+                    Dict("label" => "Greek", "value" => "grc"),
+                    Dict("label" => "Hebrew", "value" => "hbo"),
+                    Dict("label" => "Latin", "value" => "lat")
+                ]
+            )
+        ]),
+    
+        html_div(className="w3-col l5 m5",
+        children = [
+            dcc_markdown("*Translations to include:*"),
+            dcc_checklist(
+                id="translations",
+                options = msoptions(filenames, titlesdict),
+                labelStyle = Dict("display" => "inline-block")
+            )
+        ]),
+ 
+        html_div(className="w3-col l1 m1",
         children = [
             dcc_markdown("*Book*:"),
             dcc_dropdown(
@@ -85,7 +105,8 @@ app.layout = html_div(className = "w3-container") do
                 options = booksmenu(datadir)
             )
         ]),
-        html_div(className="w3-col l4 m4",
+
+        html_div(className="w3-col l3 m3",
         children = [
             dcc_markdown("*Chapter/verse* (e.g., `1:1`):")
             dcc_input(
@@ -93,21 +114,23 @@ app.layout = html_div(className = "w3-container") do
                     placeholder="1:1",
             )
         ])
-
     ]),
 
-
-
+    html_div(className="w3-container", id = "header"),
     html_div(className="w3-container", id="columns") 
 end
 
 
+function genheader(bk,ref)
+    isnothing(bk) || isnothing(ref) ? "" : dcc_markdown("## Header")
+end
 
-function gencols(optlist, titles, files)
+function gencols(optlist, titles, files, bk, psg)
     
     if isempty(optlist)
-        dcc_markdown("")
+        ""
     else
+        hdr = dcc_markdown("## Header")
         n = length(optlist)
         twelfths = floor(12 / n) |> Int
 
@@ -117,16 +140,21 @@ function gencols(optlist, titles, files)
             push!(results, html_div(className="w3-col l$(twelfths) m$(twelfths)", 
             dcc_markdown("## " * titles[optlist[i]])))
         end
-        results
+       results
     end
 end
 
 
 callback!(app,
+    Output("header", "children"),
     Output("columns", "children"),
-    Input("translations", "value")
-) do xlations 
-    isnothing(xlations) ? gencols([]) : gencols(xlations, titlesdict, filenames)
+    Input("translations", "value"),
+    Input("book", "value"),
+    Input("verse", "value")
+) do xlations, bk, psg
+    cols = isnothing(xlations) ? gencols([]) : gencols(xlations, titlesdict, filenames, bk, psg)
+    hdr = genheader(bk, psg)
+    (hdr, cols)
 end
 
 run_server(app, "0.0.0.0", DEFAULT_PORT, debug=true)
