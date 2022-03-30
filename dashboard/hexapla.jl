@@ -51,14 +51,17 @@ end
 (titlesdict, filenames, langs, texts)  = loadtexts(datadir)
 
 
-# Map language codes to readable names.
-# Probably better read in from an external source.
-booksdict = Dict(
-    "GEN" => "Genesis",
-    "EXO" => "Exodus",
-    "LEV" => "Leviticus",
-    "LUK" => "Gospel according to Luke"
-)
+"""Load data set mapping language codes to readable names."""
+function loadbooksdict(dir)
+    data = readlines(joinpath(dir, "books.cex"))
+    dict = Dict()
+    for ln in data[2:end]
+        parts = split(ln, "|")
+        dict[parts[1]] = parts[2]
+    end
+    dict
+end
+booksdict = loadbooksdict(datadir)
 
 """Generate menu of books using Latin Vulgate as source for IDs."""
 function booksmenu(dir)
@@ -70,7 +73,6 @@ function booksmenu(dir)
     end
     menu
 end
-
 
 app = if haskey(ENV, "URLBASE")
     dash(assets_folder = assets, url_base_pathname = ENV["URLBASE"])
@@ -187,10 +189,10 @@ function gencols(optlist, titles, bk, psg, textcorpora)
         results = Component[]
         for i in 1:n
             corpus = textcorpora[optlist[i]]
-            @warn("Corpus of lenght", length(corpus))
+            @debug("Corpus of lenght", length(corpus))
             txtcontent = lookup(bk, psg, corpus)
             # generate column
-            @warn("LOOKUP", bk, psg, txtcontent)
+            @debug("LOOKUP", bk, psg, txtcontent)
             col = html_div(className="w3-col l$(twelfths) m$(twelfths)", 
             children = [
                 dcc_markdown("### " * titles[optlist[i]]),
