@@ -48,14 +48,7 @@ function booksmenu(dir)
     end
     menu
 end
-# 
-function msoptions(files, titles)
-    opts = []
-    for f in files
-        push!(opts, (label = titles[f], value = f))
-    end
-    opts
-end
+
 
 app = if haskey(ENV, "URLBASE")
     dash(assets_folder = assets, url_base_pathname = ENV["URLBASE"])
@@ -97,11 +90,7 @@ app.layout = html_div(className = "w3-container") do
         html_div(className="w3-col l5 m5",
         children = [
             dcc_markdown("*Translations to include:*"),
-            dcc_checklist(
-                id="translations",
-                options = msoptions(filenames, titlesdict),
-                labelStyle = Dict("display" => "inline-block")
-            )
+            dcc_checklist(id="translations")
         ]),
  
         html_div(className="w3-col l1 m1",
@@ -128,6 +117,14 @@ app.layout = html_div(className = "w3-container") do
     html_div(className="w3-container", id="columns") 
 end
 
+# 
+function xlationoptions(files, titles, langlist)
+    opts = []
+    for f in files
+        push!(opts, (label = titles[f], value = f))
+    end
+    opts
+end
 
 function genheader(bk,ref,dict)
     if isnothing(bk) || isnothing(ref)
@@ -158,7 +155,16 @@ function gencols(optlist, titles, files, bk, psg)
     end
 end
 
-
+callback!(app,
+    Output("translations", "options"),
+    Input("languages", "value")
+) do langg
+    if isnothing(langg)
+        xlationoptions(filenames, titlesdict, [])
+    else
+        xlationoptions(filenames, titlesdict, langg)
+    end
+end
 callback!(app,
     Output("header", "children"),
     Output("columns", "children"),
@@ -166,7 +172,7 @@ callback!(app,
     Input("book", "value"),
     Input("verse", "value")
 ) do xlations, bk, psg
-    cols = isnothing(xlations) ? gencols([]) : gencols(xlations, titlesdict, filenames, bk, psg)
+    cols = isnothing(xlations) ? gencols([], titlesdict, filenames, bk, psg) : gencols(xlations, titlesdict, filenames, bk, psg)
     hdr = genheader(bk, psg, booksdict)
     (hdr, cols)
 end
