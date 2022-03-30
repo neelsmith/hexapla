@@ -82,7 +82,8 @@ app.layout = html_div(className = "w3-container") do
                     Dict("label" => "German", "value" => "deu"),
                     Dict("label" => "Greek", "value" => "grc"),
                     Dict("label" => "Hebrew", "value" => "hbo"),
-                    Dict("label" => "Latin", "value" => "lat")
+                    Dict("label" => "Latin", "value" => "lat"),
+                    Dict("label" => "Russian", "value" => "rus")
                 ]
             )
         ]),
